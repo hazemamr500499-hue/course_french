@@ -1119,19 +1119,19 @@ function updateTopbarHeight(){
 /* ============================================================
    6) LOGIN LOGIC
 ============================================================ */
-function nameMatches(query_, fullName){
-  const q = normAr(query_);
-  const f = normAr(fullName);
-  if(!q) return false;
-  const qWords = q.split(' ').filter(Boolean);
-  return qWords.every(w => f.includes(w));
+function firstNameMatches(inputName, fullName){
+  const input = normAr(inputName).split(' ').filter(Boolean);
+  const stored = normAr(fullName).split(' ').filter(Boolean);
+  if(!input.length || !stored.length) return false;
+
+  // الدخول بالاسم الأول فقط: مثال "هازِم أحمد شفيق" يكفي أن يكتب الطالب "هازِم".
+  // ولا نقبل اسمًا مختلفًا أو اسمًا مركبًا من عدة كلمات هنا.
+  return input.length === 1 && input[0] === stored[0];
 }
 
 async function doLogin(){
   const nameInput = $('#loginName').value.trim();
-  /* الكود السري بيتقارن دايمًا بعد توحيد الحروف لحروف كبيرة (توppercase)
-     في normalizeCode، فمفيش فرق خالص لو الطالب كتب الكود بحروف صغيرة
-     (ita4287) أو كبيرة (ITA4287) أو مخلوطة (Ita4287) — كله هيتقبل. */
+  // الكود السري لازم يطابق الكود الموجود في قاعدة البيانات بعد توحيد حالة الحروف.
   const pwdInput  = normalizeCode($('#loginPwd').value.trim());
   const errBox    = $('#loginError');
 
@@ -1147,38 +1147,37 @@ async function doLogin(){
   btn.textContent = '⏳ جاري التحقق…';
 
   try{
-    if(!STATE.students.length){
-      STATE.students = await fetchStudents();
-    }
+    // مهم: نقرأ قائمة الطلاب من Firestore في كل محاولة دخول،
+    // ولا نعتمد على STATE.students القديمة، حتى يتم التحقق من البيانات الحالية كل مرة.
+    STATE.students = await fetchStudents();
 
-    const nameMatchesList = STATE.students.filter(s => nameMatches(nameInput, s.name));
+    // الاسم المطلوب هو الاسم الأول فقط، ثم يجب أن يطابق الكود السري لنفس الطالب.
+    const nameMatchesList = STATE.students.filter(s => firstNameMatches(nameInput, s.name));
 
     if(!nameMatchesList.length){
       btn.disabled = false; btn.textContent = '🚀 دخول';
-      return showLoginError('❌ مفيش طالب بالاسم ده — تأكد من الاسم');
+      return showLoginError('❌ الاسم الأول غير موجود — تأكد من الاسم');
     }
 
-    /* normalizeCode بتتنادى برضه على الكود المخزّن في قاعدة البيانات،
-       فحتى لو الأستاذ سجّل الكود بحروف صغيرة من لوحة التحكم، المقارنة
-       هنا هتوحّد الاتنين لحروف كبيرة وتقارن بينهم صح 100% */
     const found = nameMatchesList.find(s => normalizeCode(s.code) === pwdInput);
 
     if(!found){
       btn.disabled = false; btn.textContent = '🚀 دخول';
-      if(nameMatchesList.length === 1) return showLoginError('🔑 الكود السري غلط — جرب تاني');
-      return showLoginError('❌ الاسم أو الكود السري غلط');
+      return showLoginError('🔑 الاسم أو الكود السري غير صحيح');
     }
 
     STATE.me = found;
     loadStudentData(found.id);
-    localStorage.setItem('cf_student_id', found.id);
+
+    // لا نحفظ تسجيل الدخول؛ كل فتح/دخول جديد لازم يمر بالتحقق من Firestore.
+    localStorage.removeItem('cf_student_id');
 
     enterDashboard();
     toast('🎉 أهلاً بك يا ' + found.name.split(' ')[0], 'ok');
 
   }catch(e){
     console.error(e);
-    showLoginError('⚠️ مشكلة في الاتصال — جرب تاني');
+    showLoginError('⚠️ مشكلة في الاتصال بقاعدة البيانات — لم يتم الدخول');
   }
   btn.disabled = false; btn.textContent = '🚀 دخول';
 }
@@ -1650,23 +1649,10 @@ if ('serviceWorker' in navigator) {
 $('#year').textContent = new Date().getFullYear();
 watchBranding();
 
-(async function boot(){
-  try{
-    const savedId = localStorage.getItem('cf_student_id');
-    if(savedId){
-      STATE.students = await fetchStudents();
-      const found = STATE.students.find(s => s.id === savedId);
-      if(found){
-        STATE.me = found;
-        loadStudentData(found.id);
-        enterDashboard();
-        return;
-      } else {
-        localStorage.removeItem('cf_student_id');
-      }
-    }
-  }catch(e){ console.error(e); }
-})();
+// لا يوجد دخول تلقائي من localStorage.
+// كل مرة تُفتح الصفحة يبدأ الطالب من شاشة الدخول، ولا يدخل للـDashboard
+// إلا بعد التحقق من الاسم الأول + الكود السري من Firestore في نفس المحاولة.
+localStorage.removeItem('cf_student_id');
 
 let lastW = window.innerWidth;
 let resizeT;
