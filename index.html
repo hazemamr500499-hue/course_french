@@ -574,6 +574,21 @@ tbody tr:last-child td{border-bottom:none}
 .hidden{display:none !important}
 .small{font-size:12px;color:var(--muted);font-weight:700}
 
+/* ============================================================
+   DASHBOARD HEADER LOCK — مستقل عن حاوية الـDashboard
+   الهيدر خرج من الـdashboard نفسه حتى لا يتأثر بأي scrolling
+   أو layout/overflow في الصفحة. يظل مثبتًا في نافذة العرض فقط.
+   ============================================================ */
+#topbar{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  z-index:99999 !important;
+  transform:none !important;
+  animation:none !important;
+}
+
 /* Responsive */
 @media (max-width:900px){
   .wrap{padding-left:12px;padding-right:12px}
@@ -612,36 +627,6 @@ tbody tr:last-child td{border-bottom:none}
   .wrap{max-width:1400px}
   .topbar{max-width:1400px}
 }
-
-/* ============================================================
-   FIXED HEADER — الهيدر واللوجو وبيانات البوابة ثابتة تمامًا
-   التعديل هنا خاص بثبات الهيدر فقط.
-   ============================================================ */
-.topbar{
-  position:fixed !important;
-  top:0 !important;
-  right:0 !important;
-  left:0 !important;
-  z-index:99999 !important;
-  transform:none !important;
-  animation:none !important;
-}
-
-.topbar-main,
-.topbar .brand,
-.topbar .logo-box,
-.topbar .logo-box img,
-.topbar .brand-txt,
-.topbar .brand-sub,
-.topbar .top-actions,
-.topbar #dashHeaderImage{
-  transform:none !important;
-}
-
-.wrap{
-  padding-top:calc(var(--topbar-h) + 16px) !important;
-}
-
 </style>
 </head>
 <body>
@@ -687,9 +672,7 @@ tbody tr:last-child td{border-bottom:none}
 <!-- ============================================================
      DASHBOARD
 ============================================================ -->
-<div class="dashboard" id="dashboard">
-
-  <header class="topbar" id="topbar">
+<header class="topbar" id="topbar" style="display:none">
     <div class="topbar-main">
       <div class="brand">
         <div class="logo-box"><img id="dashLogo" src="1.jpg" alt="Logo"></div>
@@ -708,6 +691,7 @@ tbody tr:last-child td{border-bottom:none}
     <img id="dashHeaderImage" class="dash-banner" alt="بانر الموقع">
   </header>
 
+<div class="dashboard" id="dashboard">
 <div class="wrap">
 
   <!-- Hero -->
@@ -1215,6 +1199,7 @@ $('#btnLogin').addEventListener('click', doLogin);
 function enterDashboard(){
   $('#loginScreen').style.display = 'none';
   $('#dashboard').classList.add('active');
+  $('#topbar').style.display = 'flex';
   $('#mainFoot').style.display = 'flex';
 
   const s = STATE.me;
@@ -1245,6 +1230,7 @@ $('#btnLogout').addEventListener('click', ()=>{
   STATE.exams = [];
   STATE.behavior = [];
   $('#dashboard').classList.remove('active');
+  $('#topbar').style.display = 'none';
   $('#loginScreen').style.display = 'flex';
   $('#mainFoot').style.display = 'none';
   $('#loginName').value = '';
