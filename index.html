@@ -37,6 +37,8 @@
   --shadow:0 6px 22px -10px rgba(15,23,42,.12), 0 2px 8px -3px rgba(15,23,42,.06);
   --shadow-lg:0 28px 60px -24px rgba(15,23,42,.22), 0 10px 24px -12px rgba(15,23,42,.10);
   --shadow-sm:0 2px 10px -4px rgba(15,23,42,.10);
+
+  --topbar-h:84px;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -232,12 +234,13 @@ button{cursor:pointer}
 .dashboard{display:none;position:relative;z-index:2}
 .dashboard.active{display:block}
 
-.wrap{max-width:1340px;margin:0 auto;padding:16px 14px 130px}
+.wrap{max-width:1340px;margin:0 auto;padding:calc(var(--topbar-h) + 16px) 14px 130px}
 
 .topbar{
-  position:sticky;top:0;z-index:60;
+  position:fixed;top:0;right:0;left:0;z-index:60;
+  max-width:1340px;margin:0 auto;
   display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
-  padding:12px 16px;margin-bottom:18px;
+  padding:12px 16px;
   background:rgba(255,255,255,.90);
   backdrop-filter:blur(22px) saturate(180%);
   -webkit-backdrop-filter:blur(22px) saturate(180%);
@@ -553,11 +556,11 @@ tbody tr:last-child td{border-bottom:none}
 
 /* Responsive */
 @media (max-width:900px){
-  .wrap{padding:14px 12px 140px}
+  .wrap{padding-left:12px;padding-right:12px}
   .tabs{grid-template-columns:repeat(3,1fr)}
 }
 @media (max-width:640px){
-  .wrap{padding:12px 10px 150px}
+  .wrap{padding-left:10px;padding-right:10px;padding-bottom:150px}
   .topbar{padding:11px 13px;border-radius:17px}
   .logo-box{width:46px;height:46px;flex:0 0 46px;border-radius:14px}
   .tabs{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -580,6 +583,7 @@ tbody tr:last-child td{border-bottom:none}
 }
 @media (min-width:1400px){
   .wrap{max-width:1400px}
+  .topbar{max-width:1400px}
 }
 </style>
 </head>
@@ -627,9 +631,8 @@ tbody tr:last-child td{border-bottom:none}
      DASHBOARD
 ============================================================ -->
 <div class="dashboard" id="dashboard">
-<div class="wrap">
 
-  <header class="topbar">
+  <header class="topbar" id="topbar">
     <div class="brand">
       <div class="logo-box"><img id="dashLogo" src="1.jpg" alt="Logo"></div>
       <div class="brand-txt">
@@ -645,6 +648,8 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <img id="dashHeaderImage" class="dash-banner" alt="بانر الموقع">
   </header>
+
+<div class="wrap">
 
   <!-- Hero -->
   <div class="hero">
@@ -1035,9 +1040,38 @@ function watchBranding(){
         if(b1){ b1.src = headerSrc; b1.style.display = 'block'; }
         if(b2){ b2.src = headerSrc; b2.style.display = 'block'; }
       }
+      updateTopbarHeight();
     }, err => console.warn('[Branding]', err));
   }catch(e){ console.warn('[Branding]', e); }
 }
+
+/* ============================================================
+   5-bis) قياس ارتفاع الهيدر الثابت (Fixed Header) تلقائيًا
+   الهيدر بقى position:fixed بدل sticky عشان يفضل ثابت 100%
+   في مكانه مهما اتحرك اسكرول الصفحة لفوق أو لتحت. وعشان طول
+   الهيدر بيتغيّر (لما بانر الصورة يظهر مثلاً)، بنراقب حجمه
+   لحظة بلحظة ونحدّث المسافة اللي فوق المحتوى (--topbar-h)
+   عشان المحتوى مايتخبّاش تحت الهيدر أبدًا.
+============================================================ */
+function updateTopbarHeight(){
+  const tb = document.getElementById('topbar');
+  if(!tb) return;
+  const h = tb.offsetHeight;
+  if(h > 0){
+    document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+}
+(function watchTopbarSize(){
+  const tb = document.getElementById('topbar');
+  if(!tb) return;
+  updateTopbarHeight();
+  if(typeof ResizeObserver !== 'undefined'){
+    const ro = new ResizeObserver(()=>updateTopbarHeight());
+    ro.observe(tb);
+  }
+  window.addEventListener('resize', updateTopbarHeight);
+  window.addEventListener('orientationchange', ()=>setTimeout(updateTopbarHeight,150));
+})();
 
 /* ============================================================
    6) LOGIN LOGIC
@@ -1139,6 +1173,7 @@ function enterDashboard(){
   $('#reportMonth').value = thisMonthISO();
 
   refreshAllViews();
+  updateTopbarHeight();
 }
 
 $('#btnLogout').addEventListener('click', ()=>{
