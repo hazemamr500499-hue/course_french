@@ -234,7 +234,7 @@ button{cursor:pointer}
 .dashboard{display:none;position:relative;z-index:2}
 .dashboard.active{display:block}
 
-.wrap{max-width:1340px;margin:0 auto;padding:calc(var(--topbar-h) + 16px) 14px 130px}
+.wrap{max-width:1340px;margin:0 auto;padding:16px 14px 130px}
 
 /* ============================================================
    TOPBAR — الهيدر الثابت (Fixed): صف واحد مرتب دايمًا
@@ -1199,7 +1199,8 @@ $('#btnLogin').addEventListener('click', doLogin);
 function enterDashboard(){
   $('#loginScreen').style.display = 'none';
   $('#dashboard').classList.add('active');
-  $('#topbar').style.display = 'flex';
+  // لا يوجد هيدر داخل الـDashboard؛ الهيدر موجود في شاشة تسجيل الدخول فقط.
+  $('#topbar').style.display = 'none';
   $('#mainFoot').style.display = 'flex';
 
   const s = STATE.me;
