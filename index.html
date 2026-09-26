@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0055A4">
 <title>Cours de français | بوابة الطالب</title>
 
@@ -40,7 +40,7 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;touch-action:manipulation}
 body{
   font-family:'Cairo',system-ui,-apple-system,sans-serif;
   background:var(--bg); color:var(--txt);
@@ -48,6 +48,7 @@ body{
   overflow-x:hidden; position:relative;
   padding-bottom:env(safe-area-inset-bottom);
   line-height:1.65;
+  touch-action:manipulation;
 }
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -513,13 +514,13 @@ tbody tr:last-child td{border-bottom:none}
 .copyright b{color:var(--brand);font-weight:900}
 .copyright .heart{color:var(--red)}
 
-/* زر التثبيت — أسفل اليسار خالص، تحت خط الحقوق */
+/* زر التنزيل — أسفل اليسار خالص خالص، تحت خط الحقوق */
 .install-fab{
-  position:fixed;bottom:16px;left:16px;z-index:80;
-  display:inline-flex;align-items:center;gap:8px;
-  padding:11px 18px;border-radius:999px;
+  position:fixed;bottom:6px;left:6px;z-index:80;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 16px;border-radius:999px;
   background:linear-gradient(135deg,var(--brand),var(--brand-2));
-  color:#fff;font-weight:900;font-size:12.5px;
+  color:#fff;font-weight:900;font-size:12px;
   box-shadow:0 12px 28px -10px rgba(0,85,164,.65);
   border:none;
 }
@@ -572,7 +573,7 @@ tbody tr:last-child td{border-bottom:none}
   #toasts{bottom:120px}
   .login-card{padding:28px 20px 24px;border-radius:22px}
   .login-title{font-size:22px}
-  .install-fab{bottom:14px;left:10px;padding:10px 14px;font-size:11.5px}
+  .install-fab{bottom:5px;left:5px;padding:9px 13px;font-size:11px}
 }
 @media (max-width:380px){
   .tabs{grid-template-columns:1fr}
@@ -756,7 +757,7 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </footer>
 
-<button id="installBtn" class="install-fab" type="button" style="display:none">📲 تثبيت</button>
+<button id="installBtn" class="install-fab" type="button" style="display:none">⬇️ تنزيل الموقع</button>
 
 <div id="toasts"></div>
 
@@ -787,6 +788,13 @@ try{
   db = getFirestore(app);
   console.log("✅ متصل بقاعدة بيانات Cours de français (french-a4085)");
 }catch(e){ console.error('[Firebase init]', e); }
+
+/* منع الزوم (pinch/double-tap) — طبقة أمان إضافية فوق قفل viewport،
+   لأن سفاري على الآيفون أحيانًا بيتجاهل user-scalable=no */
+document.addEventListener('gesturestart',  e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend',    e => e.preventDefault());
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
 /* ============================================================
    1) HELPERS
@@ -1430,6 +1438,8 @@ function renderBehavior(){
 (function () {
   'use strict';
 
+  const INSTALLED_FLAG = 'cf_pwa_installed';
+
   function isStandalone() {
     return window.matchMedia('(display-mode: standalone)').matches ||
            window.matchMedia('(display-mode: fullscreen)').matches ||
@@ -1442,9 +1452,24 @@ function renderBehavior(){
     const ua = navigator.userAgent;
     return /Chrome|Chromium|Edg|OPR/i.test(ua) && !/SamsungBrowser|Firefox|CriOS|FxiOS/i.test(ua);
   }
-  function isSupportedInstallBrowser() { return isChromiumBrowser() && !isStandalone(); }
+  /* علامة دائمة تتخزن في المتصفح لحظة التثبيت — تغطي الحالة اللي
+     الطالب يفتح فيها الموقع من تبويب عادي (مش من الأيقونة) بعد
+     ما يكون ثبّته قبل كده، فمفيش داعي يظهر له الزرار تاني */
+  function wasInstalledBefore() {
+    try { return localStorage.getItem(INSTALLED_FLAG) === '1'; }
+    catch (e) { return false; }
+  }
+  function markInstalled() {
+    try { localStorage.setItem(INSTALLED_FLAG, '1'); } catch (e) {}
+  }
+  function isSupportedInstallBrowser() {
+    return isChromiumBrowser() && !isStandalone() && !wasInstalledBefore();
+  }
 
   let deferredInstallPrompt = null;
+
+  // لو المتصفح فاتح الموقع في وضع standalone فده دليل قاطع إنه متثبت فعلاً
+  if (isStandalone() || isIOSStandalone()) markInstalled();
 
   window.addEventListener('beforeinstallprompt', function (event) {
     event.preventDefault();
@@ -1453,6 +1478,7 @@ function renderBehavior(){
   });
   window.addEventListener('appinstalled', function () {
     deferredInstallPrompt = null;
+    markInstalled();
     updateInstallButton();
   });
 
@@ -1467,7 +1493,7 @@ function renderBehavior(){
 
   function updateInstallButton() {
     findInstallButtons().forEach(function (button) {
-      if (isStandalone() || isIOSStandalone()) {
+      if (isStandalone() || isIOSStandalone() || wasInstalledBefore()) {
         button.hidden = true;
         button.style.display = 'none';
         return;
