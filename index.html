@@ -38,7 +38,7 @@
   --shadow-lg:0 28px 60px -24px rgba(15,23,42,.22), 0 10px 24px -12px rgba(15,23,42,.10);
   --shadow-sm:0 2px 10px -4px rgba(15,23,42,.10);
 
-  --topbar-h:84px;
+  --topbar-h:66px;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -236,40 +236,60 @@ button{cursor:pointer}
 
 .wrap{max-width:1340px;margin:0 auto;padding:calc(var(--topbar-h) + 16px) 14px 130px}
 
+/* ============================================================
+   TOPBAR — الهيدر الثابت (Fixed): صف واحد مرتب دايمًا
+   اللوجو + الاسم على اليمين، وزرار الخروج على الشمال، وما
+   بيتفككوش أو ينزل زرار الخروج سطر لوحده أبدًا (flex-wrap:nowrap
+   + تقصير النص بالنقط "...") — مظبوطين بالأساس على شاشة الموبايل
+   لأنها الأكتر استخدامًا، وبعدين بيبقوا مريحين أكتر على التابلت
+   والشاشات الكبيرة. البانر (لو الأستاذ رفعه) بيبقى شريط رفيع
+   تحت صف اللوجو، جوه نفس كارت الهيدر، مش صف عريض بيكبّر الهيدر.
+============================================================ */
 .topbar{
   position:fixed;top:0;right:0;left:0;z-index:60;
   max-width:1340px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
-  padding:12px 16px;
+  display:flex;flex-direction:column;
   background:rgba(255,255,255,.90);
   backdrop-filter:blur(22px) saturate(180%);
   -webkit-backdrop-filter:blur(22px) saturate(180%);
   border:1px solid var(--border);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
+  overflow:hidden;
 }
-.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.topbar-main{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:nowrap;gap:10px;
+  padding:10px 14px;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;overflow:hidden}
 .logo-box{
-  position:relative;width:54px;height:54px;flex:0 0 54px;border-radius:16px;overflow:hidden;
+  position:relative;width:44px;height:44px;flex:0 0 44px;border-radius:13px;overflow:hidden;
   border:2px solid var(--border);
   box-shadow:0 4px 14px -4px rgba(0,85,164,.28);
   background:linear-gradient(145deg,#ffffff,#eef2f9);
 }
 .logo-box img{width:100%;height:100%;object-fit:cover}
+.brand-txt{min-width:0;flex:1 1 auto;overflow:hidden}
 .brand-txt h1{
-  font-size:clamp(15px,2.6vw,20px);font-weight:900;letter-spacing:.3px;line-height:1.15;
+  font-size:14.5px;font-weight:900;letter-spacing:.2px;line-height:1.2;
   background:linear-gradient(95deg,#0f172a 10%,var(--brand-2) 55%,#0f172a 95%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  white-space:nowrap;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.brand-sub{display:flex;align-items:center;gap:8px;margin-top:3px}
-.brand-sub small{color:var(--muted);font-size:11.5px;font-weight:800;letter-spacing:.5px}
+.brand-sub{display:flex;align-items:center;gap:6px;margin-top:2px;min-width:0}
+.brand-sub small{
+  color:var(--muted);font-size:10.5px;font-weight:800;letter-spacing:.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+.flag-pill{flex:0 0 auto}
 
-.top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.top-actions .btn{width:auto;padding:9px 14px;font-size:12.5px}
 
 .dash-banner{
-  display:none;flex:1 0 100%;width:100%;max-height:140px;object-fit:cover;
-  border-radius:16px;margin-top:12px;border:1px solid var(--border);
+  display:none;width:100%;max-height:64px;object-fit:cover;object-position:center;
+  border-top:1px solid var(--border);
 }
 
 /* Hero student card */
@@ -561,8 +581,13 @@ tbody tr:last-child td{border-bottom:none}
 }
 @media (max-width:640px){
   .wrap{padding-left:10px;padding-right:10px;padding-bottom:150px}
-  .topbar{padding:11px 13px;border-radius:17px}
-  .logo-box{width:46px;height:46px;flex:0 0 46px;border-radius:14px}
+  .topbar{border-radius:17px}
+  .topbar-main{padding:9px 12px;gap:8px}
+  .logo-box{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
+  .brand{gap:8px}
+  .brand-txt h1{font-size:13px}
+  .brand-sub small{font-size:10px}
+  .top-actions .btn{padding:8px 12px;font-size:12px}
   .tabs{grid-template-columns:repeat(2,1fr);gap:8px}
   .tab{padding:11px 10px;font-size:12px;border-radius:13px}
   .card{padding:16px;border-radius:17px}
@@ -580,6 +605,8 @@ tbody tr:last-child td{border-bottom:none}
 }
 @media (max-width:380px){
   .tabs{grid-template-columns:1fr}
+  .brand-sub small{max-width:132px}
+  .top-actions .btn{padding:8px 10px;font-size:11.5px}
 }
 @media (min-width:1400px){
   .wrap{max-width:1400px}
@@ -633,18 +660,20 @@ tbody tr:last-child td{border-bottom:none}
 <div class="dashboard" id="dashboard">
 
   <header class="topbar" id="topbar">
-    <div class="brand">
-      <div class="logo-box"><img id="dashLogo" src="1.jpg" alt="Logo"></div>
-      <div class="brand-txt">
-        <h1>Cours de français</h1>
-        <div class="brand-sub">
-          <span class="flag-pill"></span>
-          <small>بوابة الطالب · Monsieur Wael Anwar</small>
+    <div class="topbar-main">
+      <div class="brand">
+        <div class="logo-box"><img id="dashLogo" src="1.jpg" alt="Logo"></div>
+        <div class="brand-txt">
+          <h1>Cours de français</h1>
+          <div class="brand-sub">
+            <span class="flag-pill"></span>
+            <small>بوابة الطالب · Monsieur Wael Anwar</small>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="top-actions">
-      <button class="btn btn-ghost" id="btnLogout" style="width:auto;padding:10px 16px;font-size:13px">🚪 خروج</button>
+      <div class="top-actions">
+        <button class="btn btn-ghost" id="btnLogout">🚪 خروج</button>
+      </div>
     </div>
     <img id="dashHeaderImage" class="dash-banner" alt="بانر الموقع">
   </header>
