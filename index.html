@@ -604,11 +604,11 @@ tbody tr:last-child td{border-bottom:none}
 
     <div class="field">
       <label>👤 اكتب اسمك (أول اسم على الأقل)</label>
-      <input class="inp" id="loginName" placeholder="مثال: حازم" autocomplete="off">
+      <input class="inp" id="loginName" placeholder="اكتب اسمك هنا" autocomplete="off">
     </div>
     <div class="field">
       <label>🔑 اكتب الكود السري بتاعك</label>
-      <input class="inp pwd" id="loginPwd" placeholder="ITA4287" autocomplete="off">
+      <input class="inp pwd" id="loginPwd" placeholder="الباسورد بتاعك" autocomplete="off">
     </div>
 
     <button class="btn btn-brand" id="btnLogin">🚀 دخول</button>
@@ -1004,6 +1004,15 @@ buildBgLetters();
    5) الهوية الفرنسية — الشعار والبانر يتحدّثون تلقائيًا
    بيقرأوا نفس مستند siteSettings/branding اللي لوحة التحكم
    بترفعله الصور، وبيتغيروا في كل مكان لحظة الرفع (onSnapshot).
+
+   ملحوظة مهمة — النظام الجديد (Base64 داخل Firestore):
+   لوحة التحكم بطّلت تستخدم Firebase Storage خالص (كان محتاج
+   خطة Blaze المدفوعة)، وبقت بتحول الصورة (اللوجو أو البانر)
+   لنص Base64 وتحفظه مباشرة جوه الحقلين logoBase64 و headerBase64
+   في نفس مستند siteSettings/branding. عشان كده هنا بنقرأ الحقلين
+   الجداد (logoBase64 / headerBase64) الأول، وبرضه سايبين قراءة
+   الحقلين القدام (logoUrl / headerUrl) كخطة احتياطية لو لسه فيه
+   بيانات قديمة متسجلة بالنظام القديم، عشان مفيش أي صورة تتفقد.
 ============================================================ */
 function watchBranding(){
   if(!db) return;
@@ -1012,15 +1021,19 @@ function watchBranding(){
       if(!snap.exists()) return;
       const data = snap.data() || {};
 
-      if(data.logoUrl){
+      // النظام الجديد أولًا (Base64)، ولو مش موجود نرجع للنظام
+      // القديم (رابط Storage) عشان التوافق مع أي بيانات قديمة
+      const logoSrc = data.logoBase64 || data.logoUrl;
+      if(logoSrc){
         const l1 = $('#loginLogo'), l2 = $('#dashLogo');
-        if(l1) l1.src = data.logoUrl;
-        if(l2) l2.src = data.logoUrl;
+        if(l1) l1.src = logoSrc;
+        if(l2) l2.src = logoSrc;
       }
-      if(data.headerUrl){
+      const headerSrc = data.headerBase64 || data.headerUrl;
+      if(headerSrc){
         const b1 = $('#loginHeaderImage'), b2 = $('#dashHeaderImage');
-        if(b1){ b1.src = data.headerUrl; b1.style.display = 'block'; }
-        if(b2){ b2.src = data.headerUrl; b2.style.display = 'block'; }
+        if(b1){ b1.src = headerSrc; b1.style.display = 'block'; }
+        if(b2){ b2.src = headerSrc; b2.style.display = 'block'; }
       }
     }, err => console.warn('[Branding]', err));
   }catch(e){ console.warn('[Branding]', e); }
@@ -1039,6 +1052,9 @@ function nameMatches(query_, fullName){
 
 async function doLogin(){
   const nameInput = $('#loginName').value.trim();
+  /* الكود السري بيتقارن دايمًا بعد توحيد الحروف لحروف كبيرة (توppercase)
+     في normalizeCode، فمفيش فرق خالص لو الطالب كتب الكود بحروف صغيرة
+     (ita4287) أو كبيرة (ITA4287) أو مخلوطة (Ita4287) — كله هيتقبل. */
   const pwdInput  = normalizeCode($('#loginPwd').value.trim());
   const errBox    = $('#loginError');
 
@@ -1065,6 +1081,9 @@ async function doLogin(){
       return showLoginError('❌ مفيش طالب بالاسم ده — تأكد من الاسم');
     }
 
+    /* normalizeCode بتتنادى برضه على الكود المخزّن في قاعدة البيانات،
+       فحتى لو الأستاذ سجّل الكود بحروف صغيرة من لوحة التحكم، المقارنة
+       هنا هتوحّد الاتنين لحروف كبيرة وتقارن بينهم صح 100% */
     const found = nameMatchesList.find(s => normalizeCode(s.code) === pwdInput);
 
     if(!found){
